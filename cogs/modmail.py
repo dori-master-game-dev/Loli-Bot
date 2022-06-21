@@ -134,14 +134,14 @@ class Modmail(BaseCog):
 
         """
 
+        await ctx.defer()
+
         if str(ctx.author.id) in self.cache["userThreads"]:
             await ctx.respond("Session already started.")
 
             return
 
         member = await self.guild.fetch_member(ctx.author.id)
-
-        thread: discord.Thread = await self.modmail_channel.create_thread(name=title)
 
         embed = discord.Embed(
             description=f"{ctx.author.mention}\nReason for mail: {reason}", timestamp=datetime.now(), colour=Colour.green())
@@ -156,9 +156,9 @@ class Modmail(BaseCog):
 
         embed.add_field(name="**Roles**", value=value)
 
-        await thread.send(embed=embed)
+        message = await self.modmail_channel.send(embed=embed)
 
-        await ctx.defer()
+        thread = await message.create_thread(name=title)
 
         role = await self.guild._fetch_role(self._modmail_role_id)
 
