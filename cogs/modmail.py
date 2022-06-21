@@ -12,8 +12,8 @@ from core.checks import PermissionLevel
 class Modmail(BaseCog):
     _id = "modmail"
 
-    _modmail_channel_id = 981271368140206170
-    _modmail_role_id = 975558400991707136
+    _modmail_channel_id = 988716582006046763
+    _modmail_role_id = 988716777267687455
 
     default_cache = {
         "userThreads": {

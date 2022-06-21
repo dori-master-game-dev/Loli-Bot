@@ -14,7 +14,7 @@ class Database:
         try:
             # gets kusanalibot database in db
             self.db = motor.AsyncIOMotorClient(
-                bot.config["pymongo_uri"]).kusanalibot
+                bot.config["pymongo_uri"]).loliBot
 
         except ConfigurationError as e:
             logger.error(f"MongoDB connection error: {e}")
