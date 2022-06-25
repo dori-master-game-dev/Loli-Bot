@@ -18,7 +18,7 @@ from core.config import Config
 logger = get_logger(__name__)
 
 
-class KusanaliBot(commands.Bot):
+class LoliBot(commands.Bot):
     def __init__(self):
         super().__init__(intents=discord.Intents.all())
 
@@ -109,7 +109,7 @@ class KusanaliBot(commands.Bot):
                         "Attempting to login with only the server members privileged intent. Some plugins might not work correctly."
                     )
 
-                    await self.start(self.token)
+                    await self.start(self.config["bot_token"])
 
             except discord.PrivilegedIntentsRequired:
                 logger.critical(
@@ -186,7 +186,7 @@ class KusanaliBot(commands.Bot):
 
 
 def main():
-    bot = KusanaliBot()
+    bot = LoliBot()
     bot.run()
 
 
