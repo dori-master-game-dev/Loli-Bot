@@ -27,7 +27,7 @@ async def create_rank_card(url, exp, name, rank, upload = False):
     avatar = Image.open(requests.get(url, stream=True).raw)
     avatar = avatar.resize((450, 450))
 
-    bg = Image.open("./assets/KusanaliRank.png")
+    bg = Image.open("./assets/DoriRankCard.png")
 
     base = Image.new("RGBA", (1800, 600), "Black")
     bar = Image.new("RGBA", (485 + int(850 * progress), 600), (74, 124, 117))
