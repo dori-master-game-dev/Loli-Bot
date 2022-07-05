@@ -30,7 +30,7 @@ async def create_rank_card(url, exp, name, rank, upload = False):
     bg = Image.open("./assets/DoriRankCard.png")
 
     base = Image.new("RGBA", (1800, 600), "Black")
-    bar = Image.new("RGBA", (485 + int(850 * progress), 600), (74, 124, 117))
+    bar = Image.new("RGBA", (485 + int(850 * progress), 600), (255, 0, 255))
 
     base.paste(bar, (0, 0))
     attach(base, avatar, (0.142, 0.4325))
