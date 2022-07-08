@@ -209,7 +209,7 @@ class Modmail(BaseCog):
         
     @_mm.command(name="setup", description="Sets up the modmail.")
     @checks.has_permissions(PermissionLevel.ADMINISTRATOR)
-    async def _mm_setup(self, ctx, channel: discord.Option(discord.TextChannel, "Modmail channel."), role: discord.Option(discord.Role, "Modmail ping role.")
+    async def _mm_setup(self, ctx, channel: discord.Option(discord.TextChannel, "Modmail channel."), role: discord.Option(discord.Role, "Modmail ping role."):
         self.cache["modmailChannel"] = channel.id
         self.cache["modmailRole"] = role.id
                         
