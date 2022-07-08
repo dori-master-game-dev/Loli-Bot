@@ -25,7 +25,8 @@ class Modmail(BaseCog):
                             default_member_permissions=Permissions(manage_messages=True))
 
     async def after_load(self):
-        self.modmail_channel = await self.guild.fetch_channel(self.cache["modmailChannel"])
+        if self.cache["modmailChannel"]:
+            self.modmail_channel = await self.guild.fetch_channel(self.cache["modmailChannel"])
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -203,6 +204,8 @@ class Modmail(BaseCog):
 
         self.cache["userThreads"].pop(str(ctx.author.id))
         await self.update_db()
+
+        self.modmail_channel = await self.guild.fetch_channel(self.cache["modmailChannel"])
 
         await ctx.respond("Session ended!")
 
