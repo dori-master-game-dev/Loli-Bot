@@ -116,7 +116,7 @@ class Modmail(BaseCog):
         
         if type(ctx.channel) != discord.threads.Thread or ctx.channel.parent_id != self.cache["modmailChannel"]:
             embed = discord.Embed(
-            title="Error", description="You can't use this command here.")
+            title="Error", description="You can't use this command here.", colour=Colour.red())
 
             await ctx.respond(embed=embed, ephemeral=True)
         
