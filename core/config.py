@@ -13,6 +13,7 @@ class Config:
     bot_config = {
         "activity_type": int,
         "bot_token": str,
+        "database_name": str,
         "guild_id":  int,
         "log":  str,
         "pymongo_uri":  str,
