@@ -14,7 +14,7 @@ class Database:
         try:
             # gets kusanalibot database in db
             self.db = motor.AsyncIOMotorClient(
-                bot.config["pymongo_uri"]).loliBot
+                bot.config["pymongo_uri"])[bot.config["database_name"]]
 
         except ConfigurationError as e:
             logger.error(f"MongoDB connection error: {e}")
@@ -35,7 +35,7 @@ class Database:
                 uri = self.bot.config["pymongo_uri"]
                 logger.critical("Invalid SSL certificate")
                 self.db = motor.AsyncIOMotorClient(
-                    uri, tlsAllowInvalidCertificates=True).kusanalibot
+                    uri, tlsAllowInvalidCertificates=True)[bot.config["database_name"]]
 
                 return await self.validate_connection(ssl_retry=False)
 
