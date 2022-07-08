@@ -12,17 +12,19 @@ from core.checks import PermissionLevel
 class Modmail(BaseCog):
     _id = "modmail"
 
-    _modmail_channel_id = 988716582006046763
-    _modmail_role_id = 988716777267687455
-
     default_cache = {
         "userThreads": {
 
-        }
+        },
+        "modmailChannel": None,
+        "modmailRole": None
     }
+    
+    _mm = SlashCommandGroup("modmail", "Manages modmail.",
+                            default_member_permissions=Permissions(manage_messages=True))
 
     async def after_load(self):
-        self.modmail_channel = await self.guild.fetch_channel(self._modmail_channel_id)
+        self.modmail_channel = await self.guild.fetch_channel(self.cache["modmailChannel"])
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -104,12 +106,19 @@ class Modmail(BaseCog):
 
     @commands.slash_command(name="reply", description="Replies to a user in a modmail thread.", default_member_permissions=Permissions(manage_messages=True))
     @checks.has_permissions(PermissionLevel.MOD)
-    @checks.only_modmail_thread(_modmail_channel_id)
     async def reply(self, ctx: ApplicationContext, message: discord.Option(str, "The message you wish to reply with.")):
         """
         Replies to a modmail thread.
 
         """
+        
+        if type(ctx.channel) != discord.threads.Thread or ctx.channel.parent_id != self.cache["modmailChannel"]:
+            embed = discord.Embed(
+            title="Error", description="You can't use this command here.")
+
+            await ctx.respond(embed=embed, ephemeral=True)
+        
+            return
 
         embed = discord.Embed(description=message,
                               timestamp=datetime.now(), colour=Colour.blue())
@@ -160,7 +169,7 @@ class Modmail(BaseCog):
 
         thread = await message.create_thread(name=title)
 
-        role = await self.guild._fetch_role(self._modmail_role_id)
+        role = await self.guild._fetch_role(self.cache["modmailRole"])
 
         async for member in self.guild.fetch_members(limit=None):
             if role in member.roles:
@@ -197,6 +206,19 @@ class Modmail(BaseCog):
         await ctx.respond("Session ended!")
 
         self.ending = False
+        
+    @_mm.command(name="setup", description="Sets up the modmail.")
+    @checks.has_permissions(PermissionLevel.ADMINISTRATOR)
+    async def _mm_setup(self, ctx, channel: discord.Option(discord.TextChannel, "Modmail channel."), role: discord.Option(discord.Role, "Modmail ping role.")
+        self.cache["modmailChannel"] = channel.id
+        self.cache["modmailRole"] = role.id
+                        
+        await self.update_db()
+        
+        embed = discord.Embed(
+                title="Success", description=f"Modmail has been setup!", colour=Colour.green())
+
+        await ctx.respond(embed=embed)
 
 
 def setup(bot):
