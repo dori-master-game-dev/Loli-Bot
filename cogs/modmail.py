@@ -1,6 +1,7 @@
 from datetime import datetime
 import discord
 from discord.ext import commands
+from discord import SlashCommandGroup
 
 from discord import ApplicationContext, Colour, Permissions
 
