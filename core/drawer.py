@@ -44,7 +44,7 @@ async def create_rank_card(url, exp, name, rank, upload = False):
     draw.text(
         (500, 475), f"Level {level}     #{rank}", (74, 96, 124), font=regu)
 
-    base = base.resize((600, 200))
+    base = base.resize((1200, 400))
 
     id = random.randint(0, 1000000)
 
