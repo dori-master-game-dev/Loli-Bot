@@ -219,6 +219,8 @@ class Modmail(BaseCog):
                         
         await self.update_db()
         
+        self.modmail_channel = await self.guild.fetch_channel(self.cache["modmailChannel"])
+        
         embed = discord.Embed(
                 title="Success", description=f"Modmail has been setup!", colour=Colour.green())
 
