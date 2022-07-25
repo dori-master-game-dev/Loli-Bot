@@ -1,3 +1,3 @@
-# Kusanali Bot
+# Loli Bot
 
-A discord bot made for [The Academia | Kusanali Mains](https://discord.gg/kusanali) discord server.
+A discord bot made for discord servers.

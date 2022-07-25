@@ -27,13 +27,13 @@ async def create_rank_card(url, exp, name, rank, upload = False):
     avatar = Image.open(requests.get(url, stream=True).raw)
     avatar = avatar.resize((450, 450))
 
-    bg = Image.open("./assets/KusanaliRank.png")
+    bg = Image.open("./assets/DoriRankCard.png")
 
     base = Image.new("RGBA", (1800, 600), "Black")
-    bar = Image.new("RGBA", (485 + int(850 * progress), 600), (74, 124, 117))
+    bar = Image.new("RGBA", (485 + int(850 * progress), 600), (255, 0, 255))
 
     base.paste(bar, (0, 0))
-    attach(base, avatar, (0.142, 0.4325))
+    attach(base, avatar, (0.142, 0.48))
     base.paste(bg, (0, 0), mask=bg)
 
     bold = ImageFont.truetype("./fonts/calibri-bold.ttf", 80)
@@ -44,7 +44,7 @@ async def create_rank_card(url, exp, name, rank, upload = False):
     draw.text(
         (500, 475), f"Level {level}     #{rank}", (74, 96, 124), font=regu)
 
-    base = base.resize((600, 200))
+    base = base.resize((1200, 400))
 
     id = random.randint(0, 1000000)
 
