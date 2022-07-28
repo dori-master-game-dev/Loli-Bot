@@ -2,6 +2,7 @@ import base64
 import json
 
 from tabnanny import check
+import webbrowser
 import discord
 from discord.ext import commands
 from discord.ui import Select, View
@@ -107,6 +108,29 @@ class Embedder(BaseCog):
 
         embed = discord.Embed(
             title="Embeddable Objects", description=description, colour=Colour.blue())
+
+        await ctx.respond(embed=embed)
+
+    @_em.command(name="source", description="Opens the embeddable object's Discohook link in a new tab.")
+    @checks.has_permissions(PermissionLevel.MOD)
+    async def _em_source(self, ctx, name: discord.Option(str, "The name of the embeddable object.")):
+        """
+        Opens the embeddable object's Discohook link in a new tab.
+
+        """
+
+        if name not in self.cache["dataStrings"]:
+            embed = discord.Embed(
+                title="Error", description=f"An embeddable object with the name {name} is not present.\nYou can add it using `/embedder add name:{name}`.", colour=Colour.red())
+
+            await ctx.respond(embed=embed)
+
+            return
+
+        webbrowser.open(f"https://discohook.org/?data={self.cache['dataStrings'][name]}", new=2)
+
+        embed = discord.Embed(
+                title=f"Success", description=f"Discohook link for the embeddable object has been opened successfully!", colour=Colour.green())
 
         await ctx.respond(embed=embed)
 
