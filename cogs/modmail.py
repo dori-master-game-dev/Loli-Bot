@@ -20,7 +20,7 @@ class Modmail(BaseCog):
         "modmailChannel": None,
         "modmailRole": None
     }
-    
+
     _mm = SlashCommandGroup("modmail", "Manages modmail.",
                             default_member_permissions=Permissions(manage_messages=True))
 
@@ -33,7 +33,7 @@ class Modmail(BaseCog):
         if message.author.bot or message.guild != None:
             return
 
-        if str(message.author.id) not in self.cache["userThreads"]:
+        if str(message.author.id) in self.cache["userThreads"] and not self.cache["userThreads"][str(message.author.id)]["active"]:
             embed = discord.Embed(
                 description="If you wish to start a modmail thread please use `/start`\nFor ending an active thread please use `/end`", colour=Colour.blue())
 
@@ -42,8 +42,9 @@ class Modmail(BaseCog):
 
             return
 
+        thread_info = self.cache["userThreads"][str(message.author.id)]["active"]
         thread = await self.guild.fetch_channel(
-            self.cache["userThreads"][str(message.author.id)])
+            thread_info[list(thread_info.keys())[0]]["thread"])
 
         embed = discord.Embed(description=message.content,
                               timestamp=datetime.now(), colour=Colour.blue())
@@ -55,57 +56,6 @@ class Modmail(BaseCog):
     # check if the user is ending the session
     ending = False
 
-    @commands.Cog.listener()
-    async def on_thread_delete(self, thread):
-        if self.ending:
-            return
-
-        for user in self.cache["userThreads"]:
-            if self.cache["userThreads"][user] == thread.id:
-                self.cache["userThreads"].pop(user)
-
-                member = await self.guild.fetch_member(int(user))
-                await member.send("Session was closed by staff.")
-
-                break
-
-        await self.update_db()
-
-    @commands.Cog.listener()
-    async def on_thread_remove(self, thread):
-        if self.ending:
-            return
-
-        for user in self.cache["userThreads"]:
-            if self.cache["userThreads"][user] == thread.id:
-                self.cache["userThreads"].pop(user)
-
-                member = await self.guild.fetch_member(int(user))
-                await member.send("Session was closed by staff.")
-
-                break
-
-        await self.update_db()
-
-    @commands.Cog.listener()
-    async def on_thread_update(self, before, after):
-        if self.ending:
-            return
-
-        if after.archived == False and before.id == after.id:
-            return
-
-        for user in self.cache["userThreads"]:
-            if self.cache["userThreads"][user] == before.id:
-                self.cache["userThreads"].pop(user)
-
-                member = await self.guild.fetch_member(int(user))
-                await member.send("Session was closed by staff.")
-
-                break
-
-        await self.update_db()
-
     @commands.slash_command(name="reply", description="Replies to a user in a modmail thread.", default_member_permissions=Permissions(manage_messages=True))
     @checks.has_permissions(PermissionLevel.MOD)
     async def reply(self, ctx: ApplicationContext, message: discord.Option(str, "The message you wish to reply with.")):
@@ -113,13 +63,13 @@ class Modmail(BaseCog):
         Replies to a modmail thread.
 
         """
-        
+
         if type(ctx.channel) != discord.threads.Thread or ctx.channel.parent_id != self.cache["modmailChannel"]:
             embed = discord.Embed(
-            title="Error", description="You can't use this command here.", colour=Colour.red())
+                title="Error", description="You can't use this command here.", colour=Colour.red())
 
             await ctx.respond(embed=embed, ephemeral=True)
-        
+
             return
 
         embed = discord.Embed(description=message,
@@ -128,11 +78,13 @@ class Modmail(BaseCog):
             name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar)
 
         for user in self.cache["userThreads"]:
-            if self.cache["userThreads"][user] == ctx.channel.id:
-                member = await self.guild.fetch_member(int(user))
+            thread_info = self.cache["userThreads"][user]["active"]
+            if thread_info:
+                if thread_info[list(thread_info.keys())[0]]["thread"] == ctx.channel.id:
+                    member = await self.guild.fetch_member(int(user))
 
-                dm_channel = await member.create_dm()
-                await dm_channel.send(embed=embed)
+                    dm_channel = await member.create_dm()
+                    await dm_channel.send(embed=embed)
 
         await ctx.respond(embed=embed)
 
@@ -147,7 +99,7 @@ class Modmail(BaseCog):
 
         await ctx.defer()
 
-        if str(ctx.author.id) in self.cache["userThreads"]:
+        if str(ctx.author.id) in self.cache["userThreads"] and self.cache["userThreads"][str(ctx.author.id)]["active"]:
             await ctx.respond("Session already started.")
 
             return
@@ -173,11 +125,23 @@ class Modmail(BaseCog):
 
         role = await self.guild._fetch_role(self.cache["modmailRole"])
 
-        async for member in self.guild.fetch_members(limit=None):
+        members = [member async for member in self.guild.fetch_members(limit=None)]
+
+        for member in members:
             if role in member.roles:
                 await thread.add_user(member)
 
-        self.cache["userThreads"].update({str(ctx.author.id): thread.id})
+        thread_info = {
+            "active": {
+                f"{message.id}": {
+                    "title": title,
+                    "reason": reason,
+                    "thread": thread.id
+                }
+            }
+        }
+
+        self.cache["userThreads"].update({str(ctx.author.id): thread_info})
         await self.update_db()
 
         await ctx.respond("Session started!")
@@ -190,19 +154,22 @@ class Modmail(BaseCog):
 
         """
 
-        if str(ctx.author.id) not in self.cache["userThreads"]:
+        if str(ctx.author.id) not in self.cache["userThreads"] or (str(ctx.author.id) in self.cache["userThreads"] and not self.cache["userThreads"][str(ctx.author.id)]["active"]):
             await ctx.respond("No session found.")
 
             return
 
         self.ending = True
 
-        thread = await self.guild.fetch_channel(
-            self.cache["userThreads"][str(ctx.author.id)])
+        thread_info = self.cache["userThreads"][str(ctx.author.id)]["active"]
+
+        thread = await self.guild.fetch_channel(thread_info[list(thread_info.keys())[0]]["thread"])
 
         await thread.archive()
 
-        self.cache["userThreads"].pop(str(ctx.author.id))
+        self.cache["userThreads"][str(ctx.author.id)]["acitve"] = None
+        self.cache["userThreads"][str(ctx.author.id)].append(thread_info)
+
         await self.update_db()
 
         self.modmail_channel = await self.guild.fetch_channel(self.cache["modmailChannel"])
@@ -210,17 +177,53 @@ class Modmail(BaseCog):
         await ctx.respond("Session ended!")
 
         self.ending = False
-        
+
+    @_mm.command(name="list", description="Lists the modmails of a member.")
+    @checks.has_permissions(PermissionLevel.MOD)
+    async def _mm_list(self, ctx, member: discord.Option(discord.Member, "Member you want to see the mails of.")):
+        """
+        Lists the modmails of a member.
+
+        """
+
+        if str(ctx.author.id) not in self.cache["userThreads"]:
+            embed = discord.Embed(
+                title="Error", description="This user does not have any modmails.", colour=Colour.red())
+
+            ctx.respond(embed=embed)
+
+            return
+
+        embed = discord.Embed(
+            title=f"{member.name}'s modmails", colour=Colour.blue())
+
+        mails = self.cache["userThreads"][str(member.id)]
+
+        for mail in mails:
+            if mails[mail]:
+                if mail == "active":
+                    info = mails[mail][list(mails[mail].keys())[0]]
+                    mail = list(mails[mail].keys())[0]
+                embed.add_field(
+                    name=mail, value=f"**Title:** {info['title']}\n**Reason:** {info['reason']}\n**Thread ID:** {info['thread']}")
+
+        await ctx.respond(embed=embed)
+
     @_mm.command(name="setup", description="Sets up the modmail.")
     @checks.has_permissions(PermissionLevel.ADMINISTRATOR)
-    async def _mm_setup(self, ctx, channel: discord.Option(discord.TextChannel, "Modmail channel."), role: discord.Option(discord.Role, "Modmail ping role.")) :
+    async def _mm_setup(self, ctx, channel: discord.Option(discord.TextChannel, "Modmail channel."), role: discord.Option(discord.Role, "Modmail ping role.")):
+        """
+        Sets up the modmail.
+
+        """
+
         self.cache["modmailChannel"] = channel.id
         self.cache["modmailRole"] = role.id
-                        
+
         await self.update_db()
-        
+
         embed = discord.Embed(
-                title="Success", description=f"Modmail has been setup!", colour=Colour.green())
+            title="Success", description=f"Modmail has been setup!", colour=Colour.green())
 
         await ctx.respond(embed=embed)
 

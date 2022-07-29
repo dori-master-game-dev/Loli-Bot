@@ -33,7 +33,7 @@ async def create_rank_card(url, exp, name, rank, upload = False):
     bar = Image.new("RGBA", (485 + int(850 * progress), 600), (255, 0, 255))
 
     base.paste(bar, (0, 0))
-    attach(base, avatar, (0.142, 0.48))
+    attach(base, avatar, (0.142, 0.44))
     base.paste(bg, (0, 0), mask=bg)
 
     bold = ImageFont.truetype("./fonts/calibri-bold.ttf", 80)

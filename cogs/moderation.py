@@ -70,7 +70,7 @@ class Moderation(BaseCog):
 
         """
 
-        regex = r"\d{18}"
+        regex = r"\d{1,}"
 
         return re.findall(regex, ids)
 

@@ -26,7 +26,7 @@ class Configurator(BaseCog):
         "modrole", "Contains commands for managing mod roles.")
 
     async def get_member_ids(self, ids):
-        regex = r"\d{18}"
+        regex = r"\d{1,}"
 
         return re.findall(regex, ids)
 
@@ -76,7 +76,7 @@ class Configurator(BaseCog):
                 description += f"The role <@&{role_id}> already exists in the database.\n"
             # checks if the role exists in the guild
             elif await self.guild._fetch_role(int(role_id)) == None:
-                description += f"The role with ID `{role_id}` was not found in the guild."
+                description += f"The role with ID `{role_id}` was not found in the guild.\n"
             else:
                 self.cache["levelRoles"].append(int(role_id))
                 description += f"The role <@&{role_id}> was added into the database.\n"
