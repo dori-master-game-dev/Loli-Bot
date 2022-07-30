@@ -1,7 +1,7 @@
 from datetime import datetime
 import discord
 from discord.ext import commands
-from discord import SlashCommandGroup
+from discord import Embed, SlashCommandGroup
 
 from discord import ApplicationContext, Colour, Permissions
 
@@ -42,7 +42,8 @@ class Modmail(BaseCog):
 
             return
 
-        thread_info = self.cache["userThreads"][str(message.author.id)]["active"]
+        thread_info = self.cache["userThreads"][str(
+            message.author.id)]["active"]
         thread = await self.guild.fetch_channel(
             thread_info[list(thread_info.keys())[0]]["thread"])
 
@@ -132,16 +133,18 @@ class Modmail(BaseCog):
                 await thread.add_user(member)
 
         thread_info = {
-            "active": {
-                f"{message.id}": {
-                    "title": title,
-                    "reason": reason,
-                    "thread": thread.id
-                }
+            f"{message.id}": {
+                "title": title,
+                "reason": reason,
+                "thread": thread.id
             }
         }
 
-        self.cache["userThreads"].update({str(ctx.author.id): thread_info})
+        if str(ctx.author.id) not in self.cache["userThreads"]:
+            self.cache["userThreads"].update(
+                {str(ctx.author.id): {"active": None}})
+
+        self.cache["userThreads"][str(ctx.author.id)]["active"] = thread_info
         await self.update_db()
 
         await ctx.respond("Session started!")
@@ -159,6 +162,11 @@ class Modmail(BaseCog):
 
             return
 
+        if self.ending == True:
+            await ctx.respond("The session is closing.")
+
+            return
+
         self.ending = True
 
         thread_info = self.cache["userThreads"][str(ctx.author.id)]["active"]
@@ -167,16 +175,162 @@ class Modmail(BaseCog):
 
         await thread.archive()
 
-        self.cache["userThreads"][str(ctx.author.id)]["acitve"] = None
-        self.cache["userThreads"][str(ctx.author.id)].append(thread_info)
+        self.cache["userThreads"][str(ctx.author.id)]["active"] = None
+        self.cache["userThreads"][str(ctx.author.id)].update(thread_info)
 
         await self.update_db()
-
-        self.modmail_channel = await self.guild.fetch_channel(self.cache["modmailChannel"])
 
         await ctx.respond("Session ended!")
 
         self.ending = False
+
+    @_mm.command(name="create", description="Creates a modmail session.")
+    @checks.has_permissions(PermissionLevel.ADMINISTRATOR)
+    async def _mm_create(self, ctx: ApplicationContext, user: discord.Option(discord.Member, "The member you want to mail."),
+                         title: discord.Option(str, "The title of the thread."),
+                         reason: discord.Option(str, "The reason for starting a modmail sessions.")):
+        """
+        Creates a new modmail thread.
+
+        """
+
+        await ctx.defer()
+
+        if str(user.id) in self.cache["userThreads"] and self.cache["userThreads"][str(user.id)]["active"]:
+            await ctx.respond("A different session is active.")
+
+            return
+
+        embed = discord.Embed(
+            description=f"{user.mention}\nReason for mail: {reason}", timestamp=datetime.now(), colour=Colour.green())
+
+        embed.set_author(
+            name=f"{user.name}#{user.discriminator}", icon_url=user.display_avatar)
+        embed.add_field(name="**Nickname**", value=user.display_name)
+
+        value = ""
+        for role in user.roles:
+            value += f"{role.mention} "
+
+        embed.add_field(name="**Roles**", value=value)
+
+        message = await self.modmail_channel.send(embed=embed)
+
+        thread = await message.create_thread(name=title)
+
+        role = await self.guild._fetch_role(self.cache["modmailRole"])
+
+        members = [member async for member in self.guild.fetch_members(limit=None)]
+
+        for member in members:
+            if role in member.roles:
+                await thread.add_user(member)
+
+        thread_info = {
+            f"{message.id}": {
+                "title": title,
+                "reason": reason,
+                "thread": thread.id
+            }
+        }
+
+        if str(user.id) not in self.cache["userThreads"]:
+            self.cache["userThreads"].update(
+                {str(user.id): {"active": None}})
+
+        self.cache["userThreads"][str(user.id)]["active"] = thread_info
+        await self.update_db()
+
+        embed = discord.Embed(
+            title=f"You have received a new mail: {title}", description=f"Reason for mail: {reason}", timestamp=datetime.now(), colour=Colour.green())
+
+        dm_channel = await user.create_dm()
+        await dm_channel.send(embed=embed)
+
+        await ctx.respond("Session started!")
+
+    @_mm.command(name="end", description="Ends a modmail session.")
+    @checks.has_permissions(PermissionLevel.ADMINISTRATOR)
+    async def _mm_end(self, ctx: ApplicationContext, member: discord.Option(discord.Member, "The member's mail you want to close.")):
+        """
+        Ends an active modmail thread.
+
+        """
+
+        if str(member.id) not in self.cache["userThreads"] or (str(member.id) in self.cache["userThreads"] and not self.cache["userThreads"][str(member.id)]["active"]):
+            await ctx.respond("No session found.")
+
+            return
+
+        if self.ending == True:
+            await ctx.respond("The session is closing.")
+
+            return
+
+        self.ending = True
+
+        thread_info = self.cache["userThreads"][str(member.id)]["active"]
+
+        thread = await self.guild.fetch_channel(thread_info[list(thread_info.keys())[0]]["thread"])
+
+        self.cache["userThreads"][str(member.id)]["active"] = None
+        self.cache["userThreads"][str(member.id)].update(thread_info)
+
+        await self.update_db()
+
+        await member.send("Session was closed by staff.")
+
+        await ctx.respond("Session ended!")
+
+        await thread.archive()
+
+        self.ending = False
+
+    @_mm.command(name="reopen", description="Reopens a closed modmail session.")
+    @checks.has_permissions(PermissionLevel.ADMINISTRATOR)
+    async def start(self, ctx: ApplicationContext, user: discord.Option(discord.Member, "The member you want to reopen the mail of."),
+                    message_id: discord.Option(str, "The message ID of the thread you want to reopen. Found in #modmail")):
+        """
+        Reopens a closed modmail thread.
+
+        """
+
+        await ctx.defer()
+
+        if str(user.id) not in self.cache["userThreads"]:
+            await ctx.respond("This user has no past mails.")
+
+            return
+
+        if message_id not in self.cache["userThreads"][str(user.id)]:
+            await ctx.respond("Mail was not found.")
+
+            return
+
+        if self.cache["userThreads"][str(user.id)]["active"]:
+            await ctx.respond("A different session is active.")
+
+            return
+
+        thread_info = self.cache["userThreads"][str(user.id)][message_id]
+
+        thread = await self.guild.fetch_channel(thread_info["thread"])
+
+        if thread.archived:
+            await thread.unarchive()
+
+        self.cache["userThreads"][str(user.id)]["active"]= {message_id: thread_info}
+        self.cache["userThreads"][str(user.id)].pop(message_id)
+        
+        await self.update_db()
+
+        embed = discord.Embed(
+            title=f"Staff have reopened an old mail: {thread_info['title']}", description=f"Reason for mail: {thread_info['reason']}", timestamp=datetime.now(), colour=Colour.green())
+
+        dm_channel = await user.create_dm()
+        await dm_channel.send(embed=embed)
+
+        await ctx.respond("Session started!")
 
     @_mm.command(name="list", description="Lists the modmails of a member.")
     @checks.has_permissions(PermissionLevel.MOD)
@@ -204,6 +358,9 @@ class Modmail(BaseCog):
                 if mail == "active":
                     info = mails[mail][list(mails[mail].keys())[0]]
                     mail = list(mails[mail].keys())[0]
+                else:
+                    info = mails[mail]
+
                 embed.add_field(
                     name=mail, value=f"**Title:** {info['title']}\n**Reason:** {info['reason']}\n**Thread ID:** {info['thread']}")
 
