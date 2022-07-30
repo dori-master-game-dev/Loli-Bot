@@ -321,7 +321,7 @@ class Modmail(BaseCog):
 
         self.cache["userThreads"][str(user.id)]["active"]= {message_id: thread_info}
         self.cache["userThreads"][str(user.id)].pop(message_id)
-        
+
         await self.update_db()
 
         embed = discord.Embed(
@@ -380,7 +380,7 @@ class Modmail(BaseCog):
         await self.update_db()
 
         embed = discord.Embed(
-            title="Success", description=f"Modmail has been setup!", colour=Colour.green())
+            title="Success", description=f"Modmail has been set up!", colour=Colour.green())
 
         await ctx.respond(embed=embed)
 
