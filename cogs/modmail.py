@@ -33,7 +33,7 @@ class Modmail(BaseCog):
         if message.author.bot or message.guild != None:
             return
 
-        if str(message.author.id) in self.cache["userThreads"] and not self.cache["userThreads"][str(message.author.id)]["active"]:
+        if str(message.author.id) in self.cache["userThreads"] and not self.cache["userThreads"][str(message.author.id)]["active"] or str(message.author.id) not in self.cache["userThreads"]:
             embed = discord.Embed(
                 description="If you wish to start a modmail thread please use `/start`\nFor ending an active thread please use `/end`", colour=Colour.blue())
 
