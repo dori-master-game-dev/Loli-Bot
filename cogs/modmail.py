@@ -288,7 +288,7 @@ class Modmail(BaseCog):
 
     @_mm.command(name="reopen", description="Reopens a closed modmail session.")
     @checks.has_permissions(PermissionLevel.ADMINISTRATOR)
-    async def start(self, ctx: ApplicationContext, user: discord.Option(discord.Member, "The member you want to reopen the mail of."),
+    async def mm_reopen(self, ctx: ApplicationContext, user: discord.Option(discord.Member, "The member you want to reopen the mail of."),
                     message_id: discord.Option(str, "The message ID of the thread you want to reopen. Found in #modmail")):
         """
         Reopens a closed modmail thread.
